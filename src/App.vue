@@ -67,6 +67,7 @@
 			<br><br><br>
 			<Div>
 				<Button @click="downloadDB" v-if="radioValue == 'sql'">Сохранить ещё раз</Button>
+				<Button @click="mainPage">На главную</Button>
 			</Div>
 		</Panel>
 	</VKView>
@@ -110,7 +111,7 @@ export default {
 	methods: {
 		dbSelected() {
 			this.radioValue = document.querySelector('input[type=radio]:checked').value
-			this.dbProvider = new this.dbAdapters[this.radioValue]()
+			this.dbProvider = new this.dbAdapters[this.radioValue](true)
 			this.activePanel = 'importSourceSelector'
 		},
 		metaLoadingSuccess(data) {
@@ -140,6 +141,9 @@ export default {
 				'vk-msg.sqlite',
 				'application/octet-stream'
 			)
+		},
+		mainPage() {
+			this.$emit('gohome')
 		},
 		async startParsingMessages(data) {
 			let chatsArr = Object.keys(data.chats)
@@ -184,6 +188,7 @@ export default {
 			}
 			userDBMap = undefined
 			this.activePanel = 'finalstep'
+			localStorage['vkmsg-db-sel'] = this.radioValue
 			if (this.rarioValue == 'sql') this.downloadDB()
 		}
 	}
