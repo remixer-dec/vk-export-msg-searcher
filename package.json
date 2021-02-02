@@ -11,6 +11,7 @@
     "@urapywka/vkui": "^0.1.56",
     "core-js": "^3.6.5",
     "jszip": "^3.5.0",
+    "sql.js": "^1.4.0",
     "vue": "^2.6.11"
   },
   "devDependencies": {

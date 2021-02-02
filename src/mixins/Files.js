@@ -21,7 +21,11 @@ const FileOperationMixin = {
             if (filename.startsWith(indexDir)) {
                 let messageFile = filename.match(/([0-9-]+)\/messages([0-9]+)/)
                 if (messageFile) {
-                    chatFiles[messageFile[1]] = chatFiles[messageFile[1]] > parseInt(messageFile[2]) ? chatFiles[messageFile[1]] : parseInt(messageFile[2])
+                    if (chatFiles[messageFile[1]]) {
+                        chatFiles[messageFile[1]].push(parseInt(messageFile[2]))
+                    } else {
+                        chatFiles[messageFile[1]] = [parseInt(messageFile[2])]
+                    }
                 }
             }
         }

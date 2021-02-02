@@ -3,15 +3,15 @@
 	<VKView :activePanel="activePanel">
 		<Panel id="storageSourceSelector">
 			<PanelHeader>Импортировать сообщения в</PanelHeader>
-			<Group title="Выберете куда будут сохранены сообщения">
+			<Group title="Выберете, куда будут сохранены сообщения">
 				<FormLayout class="leftform">
 					<Div>
-						<Radio default modelValue="idb" name="radio" value="idb">IndexedDB</Radio>
-						<Radio name="radio" value="wql">WebSQL (Chromium only)</Radio>
-						<Radio name="radio" value="sql">SQLite3 file</Radio>
+						<Radio default modelValue="idb" name="radio" value="idb">IndexedDB (этот браузер)</Radio>
+						<Radio name="radio" value="wql">WebSQL (этот браузер) (только для браузеров на основе Chromium)</Radio>
+						<Radio name="radio" value="sql">SQLite3 (файл)</Radio>
 					</Div>
 					<Div>
-						<Button level="outline" @click="activePanel = 'importSourceSelector'">Далее</Button>
+						<Button level="outline" @click="dbSelected">Далее</Button>
 					</Div>
 				</FormLayout>
 			</Group>
@@ -36,11 +36,38 @@
 			</Div>
 			<Group>
 				<Div>
-					<InfoRow :title="progress + '%'">
-						<Progress :value="progress" />
-					</InfoRow>
+					<Group title="Импорт всех диалогов">
+						<InfoRow :title="progress + '%'">
+							<Progress :value="progress" />
+						</InfoRow>
+					</Group>
+					<br>
+					<Group title="Импорт всех файлов">
+						<InfoRow :title="progress1 + '%'">
+							<Progress :value="progress1" />
+						</InfoRow>
+					</Group>
+					<br>
+					<Group :title="progress2text">
+						<InfoRow :title="progress2 + '%'">
+							<Progress :value="progress2" />
+						</InfoRow>
+					</Group>
+					<br>
+					<Group title="Использование оперативной памяти" v-if="memoryUseSupported">
+						<InfoRow :title="memory + '%'">
+							<Progress :value="memory" />
+						</InfoRow>
+					</Group>
 				</Div>
 			</Group>
+		</Panel>
+		<Panel id="finalstep">
+			<PanelHeader>БД импортирована</PanelHeader>
+			<br><br><br>
+			<Div>
+				<Button @click="downloadDB" v-if="radioValue == 'sql'">Сохранить ещё раз</Button>
+			</Div>
 		</Panel>
 	</VKView>
 	<input type="file" id="dirselect" webkitdirectory directory @change="dirSelected" />
@@ -50,7 +77,11 @@
 
 <script>
 import FileOperationMixin from './mixins/Files'
+import DownloaderMixin from './mixins/Downloader'
 import MessagePageParser from './parsers/MessagePageParser'
+import SQLiteAdapter from './adapters/SQLiteAdapter'
+const SQLiteProvider = new SQLiteAdapter()
+
 export default {
 	name: 'App',
 	data() {
@@ -58,12 +89,27 @@ export default {
 			activePanel: 'storageSourceSelector',
 			status: 'загрузка метаданных',
 			errorMsg: false,
-            progress: 0
+			progress: 0,
+			progress1: 0,
+			progress2: 0,
+			progress2text: '',
+			memory: 0,
+			memoryUseSupported: window.performance && window.performance.memory,
+			dbProviders: {
+				idb: false,
+				wql: false,
+				sql: SQLiteProvider
+			},
+			radioValue: 'idb'
 		}
 	},
 	components: {},
 	mixins: { FileOperationMixin },
 	methods: {
+		dbSelected() {
+			this.radioValue = document.querySelector('input[type=radio]:checked').value
+			this.activePanel = 'importSourceSelector'
+		},
 		metaLoadingSuccess(data) {
 			this.startParsingMessages(data)
 		},
@@ -85,21 +131,57 @@ export default {
 				.catch(e => this.metaLoadingError(e))
 			this.activePanel = 'loading'
 		},
+		downloadDB() {
+			DownloaderMixin.downloadBlob(
+				this.dbProviders[this.radioValue].db.export(),
+				'vk-msg.sqlite',
+				'application/octet-stream'
+			)
+		},
 		async startParsingMessages(data) {
 			let chatsArr = Object.keys(data.chats)
 			let mpp = new MessagePageParser()
-            let chatsArrLen = chatsArr.length
-            let c = 0
+			let chatsArrLen = chatsArr.length
+			let c = 0
+			let fc = 0
+			let fileCount = Object.values(data.chatFiles).reduce((a, b) => a + b.length, 0)
+			let userDBMap = new Map()
 			for (let id of chatsArr) {
-                c++
-				this.progress = (~~(c / chatsArrLen) * 100)
-				for (let i = 0, l = data.chatFiles[id]; i <= l; i++) {
+				c++
+				this.progress = ~~((c / chatsArrLen) * 100)
+				let l = data.chatFiles[id].length
+				for (let i in data.chatFiles[id]) {
+					fc++
+					if (i == 0) {
+						this.progress2text = 'Импорт сообщений из диалога ' + data.chats[id]
+						this.memory = this.memoryUseSupported
+							? ~~((window.performance.memory.usedJSHeapSize / window.performance.memory.jsHeapSizeLimit) * 100)
+							: 0
+					}
 					let mpd = mpp.parse(
-						await data.contentAdapterInstance.getFileContent(data.indexDir + id + '/messages' + i + '.html')
+						await data.contentAdapterInstance.getFileContent(
+							data.indexDir + id + '/messages' + data.chatFiles[id][i] + '.html'
+						),
+						id
 					)
-					console.log(mpd)
+
+					for (let msg of mpd.messages) {
+						this.dbProviders[this.radioValue].addMessage(msg)
+						msg = undefined
+					}
+
+					userDBMap = new Map([...userDBMap, ...(mpd.fromDB)])
+
+					this.progress1 = ~~((fc / fileCount) * 100)
+					this.progress2 = ~~((i / l) * 100)
 				}
 			}
+			for (let usr of userDBMap.entries()) {
+				this.dbProviders[this.radioValue].addUser(usr)
+			}
+			userDBMap = undefined
+			this.activePanel = 'finalstep'
+			this.downloadDB()
 		}
 	}
 }
