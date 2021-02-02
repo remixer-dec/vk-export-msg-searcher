@@ -182,6 +182,7 @@ export default {
 					this.progress1 = ~~((fc / fileCount) * 100)
 					this.progress2 = ~~((i / l) * 100)
 				}
+				this.dbProvider.addChat(id, data.chats[id])
 			}
 			for (let usr of userDBMap.entries()) {
 				this.dbProvider.addUser(usr)

@@ -14,10 +14,17 @@ export default class IDBAdapter {
     addMessage(mObj) {
         this.db.messages.put({id: mObj.id, uid: mObj.from, cid: mObj.cid, txt: mObj.txt, att: mObj.att, date: mObj.date})
     }
+    addChat(id, name) {
+        this.db.chats.put({id, name})
+    }
+    async getChats() {
+        return await this.db.chats.toArray()
+    }
     init() {
         this.db = new Dexie('vkdb')
         this.db.version(1).stores({
             users: 'id, name',
+            chats: 'id, name',
             messages: 'id, uid, cid, txt, att, date'
         })
     }

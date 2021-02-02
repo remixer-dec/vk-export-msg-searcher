@@ -5,7 +5,9 @@ export default class WebSQLAdapter {
             db.transaction(tx => {
                 tx.executeSql("DROP TABLE IF EXISTS users",[])
                 tx.executeSql("DROP TABLE IF EXISTS messages",[])
+                tx.executeSql("DROP TABLE IF EXISTS chats",[])
                 tx.executeSql("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+                tx.executeSql("CREATE TABLE chats (id INTEGER PRIMARY KEY, name TEXT)")
                 tx.executeSql("CREATE TABLE messages (id INTEGER PRIMARY KEY, uid INTEGER, cid INTEGER, txt TEXT, att TEXT, date INTEGER, FOREIGN KEY (uid) REFERENCES users(id))")
             })
         }
@@ -22,13 +24,25 @@ export default class WebSQLAdapter {
             tx.executeSql(query)
         })
     }
+    addChat(id, name) {
+        this.db.transaction(tx => {
+            tx.executeSql(`INSERT INTO chats (id, name) VALUES (${id}, '${this.q(name)}')`)
+        })
+    }
+    async getChats() {
+        return new Promise((resolve, reject) => {
+            this.db.transaction(tx => {
+                tx.executeSql(`SELECT * FROM chats`, [], (a, b) => resolve(Array.from(b.rows), ()=>reject(0)))
+            })
+        })
+    }
     q(txt) {
         return txt.replace(/'/g, '"')
     }
     async check() {
         return new Promise((resolve, reject) =>{
             this.db.transaction(tx => {
-                tx.executeSql("SELECT * FROM users", [], ()=>resolve(), ()=>reject())
+                tx.executeSql("SELECT * FROM users", [], ()=>resolve(true), ()=>reject(false))
             })
         }).catch(e=>e) || false
     }

@@ -1,7 +1,8 @@
 <template lang="html">
     <VKView activePanel="dialoglist">
         <Panel id="dialoglist">
-            <PanelHeader>Диалоги
+            <PanelHeader>
+                Диалоги
                 <template v-slot:left>
                     <HeaderButton @click="mainPage">
                         <vkui-icon name="home" />
@@ -38,10 +39,16 @@
                   <TabsItem :selected="idFilter == 'groups'" @click="idFilter = 'groups'">Группы</TabsItem>
                   <TabsItem :selected="idFilter == 'chats'" @click="idFilter = 'chats'">Беседы</TabsItem>
                 </Tabs>
+                <Search placeholder="Поиск диалога"/>
             </HeaderContext>
             <HeaderContext :opened="searchOpened" :onClose="closeSearchBox">
-                <Search/>
+                <Search placeholder="Поиск сообщений"/>
             </HeaderContext>
+            <Group>
+                <List>
+                    <Cell v-for="(chat, index) in chats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
+                </List>
+            </Group>
         </Panel>
     </VKView>
 </template>
@@ -68,12 +75,17 @@ export default {
             }
             r.readAsArrayBuffer(f)
         },
-        selectDataSource(src) {
+        selectDataSource(src, auto=false) {
             this.dbProvider = new this.dbAdapters[src](false)
             this.dbProvider.check().then(dbExists => {
                 this.dbError = dbExists ? false : 'Не удалось найти данные в выбранной БД.'
+                if (auto && !dbExists) {
+                    this.dbError = ''
+                    this.dbSelectorOpened = true
+                }
                 if (dbExists) {
                     this.closeDBSelector()
+                    this.loadChatList()
                 }
             })
         },
@@ -88,13 +100,21 @@ export default {
         },
 		mainPage() {
 			this.$emit('gohome')
-		}
+		},
+        loadChatList() {
+            this.dbProvider.getChats().then(chats => {
+                this.chats = chats
+            })
+        }
     },
-    mounted(){
-
+    mounted() {
+        if (this.dbChoice) {
+            this.selectDataSource(this.dbChoice, true)
+        }
     },
     data() {
         return {
+            chats: [],
             dbChoice: localStorage['vkmsg-db-sel'],
             dbAdapters: {
                 idb: IDBAdapter,
