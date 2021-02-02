@@ -17,8 +17,8 @@ export default class MessagePageParser {
             }
             fromDB.set(from, fromWho)
             let parsedMSG = {
-                id: msg.getAttribute('data-id'),
-                cid: chatID,
+                id: parseInt(msg.getAttribute('data-id')),
+                cid: parseInt(chatID),
                 from,
                 date: this.parseDate(msg.firstElementChild.textContent),
                 txt: msg.children[1].firstChild.innerText ? '' : 1,

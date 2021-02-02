@@ -2,10 +2,9 @@ import initSqlJs from 'sql.js'
 export default class SQLiteAdapter {
     constructor() {
         this.db = false
-        const that = this
-        initSqlJs({locateFile: (f) => '/'+f}).then((SQL)=>{
+        initSqlJs({locateFile: (f) => '/' + f}).then((SQL) => {
             const db = new SQL.Database();
-            that.db = db
+            this.db = db
             db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
             db.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, uid INTEGER, cid INTEGER, txt TEXT, att TEXT, date INTEGER, FOREIGN KEY (uid) REFERENCES users(id))")
         })

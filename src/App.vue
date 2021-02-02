@@ -81,6 +81,7 @@ import DownloaderMixin from './mixins/Downloader'
 import MessagePageParser from './parsers/MessagePageParser'
 import SQLiteAdapter from './adapters/SQLiteAdapter'
 import WebSQLAdapter from './adapters/WebSQLAdapter'
+import IDBAdapter from './adapters/IDBAdapter'
 
 export default {
 	name: 'App',
@@ -96,7 +97,7 @@ export default {
 			memory: 0,
 			memoryUseSupported: window.performance && window.performance.memory,
 			dbAdapters: {
-				idb: false,
+				idb: IDBAdapter,
 				wql: WebSQLAdapter,
 				sql: SQLiteAdapter
 			},
