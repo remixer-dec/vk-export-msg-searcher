@@ -80,7 +80,7 @@ import FileOperationMixin from './mixins/Files'
 import DownloaderMixin from './mixins/Downloader'
 import MessagePageParser from './parsers/MessagePageParser'
 import SQLiteAdapter from './adapters/SQLiteAdapter'
-const SQLiteProvider = new SQLiteAdapter()
+import WebSQLAdapter from './adapters/WebSQLAdapter'
 
 export default {
 	name: 'App',
@@ -95,11 +95,12 @@ export default {
 			progress2text: '',
 			memory: 0,
 			memoryUseSupported: window.performance && window.performance.memory,
-			dbProviders: {
+			dbAdapters: {
 				idb: false,
-				wql: false,
-				sql: SQLiteProvider
+				wql: WebSQLAdapter,
+				sql: SQLiteAdapter
 			},
+			dbProvider: false,
 			radioValue: 'idb'
 		}
 	},
@@ -108,6 +109,7 @@ export default {
 	methods: {
 		dbSelected() {
 			this.radioValue = document.querySelector('input[type=radio]:checked').value
+			this.dbProvider = new this.dbAdapters[this.radioValue]()
 			this.activePanel = 'importSourceSelector'
 		},
 		metaLoadingSuccess(data) {
@@ -133,7 +135,7 @@ export default {
 		},
 		downloadDB() {
 			DownloaderMixin.downloadBlob(
-				this.dbProviders[this.radioValue].db.export(),
+				this.dbProvider.db.export(),
 				'vk-msg.sqlite',
 				'application/octet-stream'
 			)
@@ -166,7 +168,7 @@ export default {
 					)
 
 					for (let msg of mpd.messages) {
-						this.dbProviders[this.radioValue].addMessage(msg)
+						this.dbProvider.addMessage(msg)
 						msg = undefined
 					}
 
@@ -177,11 +179,11 @@ export default {
 				}
 			}
 			for (let usr of userDBMap.entries()) {
-				this.dbProviders[this.radioValue].addUser(usr)
+				this.dbProvider.addUser(usr)
 			}
 			userDBMap = undefined
 			this.activePanel = 'finalstep'
-			this.downloadDB()
+			if (this.rarioValue == 'sql') this.downloadDB()
 		}
 	}
 }

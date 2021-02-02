@@ -1,0 +1,26 @@
+export default class WebSQLAdapter {
+    constructor() {
+        let db = openDatabase('vkdb', '1.0', 'Database with messages exported from VK', 2 * 1024 * 1024,() => {})
+        db.transaction(tx => {
+            tx.executeSql("DROP TABLE IF EXISTS users",[])
+            tx.executeSql("DROP TABLE IF EXISTS messages",[])
+            tx.executeSql("CREATE TABLE users (xid INTEGER PRIMARY KEY, name TEXT)")
+            tx.executeSql("CREATE TABLE messages (id INTEGER PRIMARY KEY, uid INTEGER, cid INTEGER, txt TEXT, att TEXT, date INTEGER, FOREIGN KEY (uid) REFERENCES users(id))")
+        })
+        this.db = db
+    }
+    addUser(uObj) {
+        this.db.transaction(tx => {
+            tx.executeSql(`INSERT INTO users (xid, name) VALUES (${uObj[0]}, '${this.q(uObj[1])}')`)
+        })
+    }
+    addMessage(mObj) {
+        this.db.transaction(tx => {
+            let query = `INSERT INTO messages (id, uid, cid, txt, att, date) VALUES (${mObj.id}, ${mObj.from}, ${mObj.cid}, '${this.q(mObj.txt)}', '${mObj.att.length > 0 ? (this.q(JSON.stringify(mObj.att))) : ""}', ${mObj.date})`
+            tx.executeSql(query)
+        })
+    }
+    q(txt) {
+        return txt.replace(/'/g, '"')
+    }
+}
