@@ -1,17 +1,20 @@
 import initSqlJs from 'sql.js'
 export default class SQLiteAdapter {
-    constructor(create=true, db=false) {
+    constructor(create=true, dbfile=false) {
         this.db = false
-        initSqlJs({locateFile: (f) => '/' + f}).then((SQL) => {
-            if (create) {
-                const db = new SQL.Database();
-                this.db = db
-                db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
-                db.run("CREATE TABLE chats (id INTEGER PRIMARY KEY, name TEXT)")
-                db.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, uid INTEGER, cid INTEGER, txt TEXT, att TEXT, date INTEGER, FOREIGN KEY (uid) REFERENCES users(id))")
-            } else {
-                this.db = new SQL.Database(db)
-            }
+        this.dbReady = new Promise((resolve, reject) => {
+            initSqlJs({locateFile: (f) => '/' + f}).then((SQL) => {
+                if (create) {
+                    const db = new SQL.Database();
+                    this.db = db
+                    db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+                    db.run("CREATE TABLE chats (id INTEGER PRIMARY KEY, name TEXT)")
+                    db.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, uid INTEGER, cid INTEGER, txt TEXT, att TEXT, date INTEGER, FOREIGN KEY (uid) REFERENCES users(id))")
+                } else {
+                    this.db = new SQL.Database(dbfile)
+                }
+                this.db ? resolve() : reject(0)
+            })
         })
     }
     addUser(uObj) {

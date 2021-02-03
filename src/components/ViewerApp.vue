@@ -39,14 +39,14 @@
                   <TabsItem :selected="idFilter == 'groups'" @click="idFilter = 'groups'">Группы</TabsItem>
                   <TabsItem :selected="idFilter == 'chats'" @click="idFilter = 'chats'">Беседы</TabsItem>
                 </Tabs>
-                <Search placeholder="Поиск диалога"/>
+                <BetterSearch placeholder="Поиск диалога" v-on:input="applyNameFilter" cache="dialogSearch"/>
             </HeaderContext>
             <HeaderContext :opened="searchOpened" :onClose="closeSearchBox">
-                <Search placeholder="Поиск сообщений"/>
+                <BetterSearch placeholder="Поиск сообщений" cache="messageSearch" />
             </HeaderContext>
             <Group>
                 <List>
-                    <Cell v-for="(chat, index) in chats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
+                    <Cell v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
                 </List>
             </Group>
         </Panel>
@@ -57,21 +57,37 @@
 import SQLiteAdapter from '../adapters/SQLiteAdapter'
 import WebSQLAdapter from '../adapters/WebSQLAdapter'
 import IDBAdapter from '../adapters/IDBAdapter'
+import FilterMixin from '../mixins/Filter'
+import BetterSearch from '../components/BetterSearch'
 
 export default {
     name: 'ViewerApp',
     provide: {
         webviewType: 'internal'
     },
+    components: {BetterSearch},
+    computed: {
+        filteredChats() {
+            let fchats = this.chats.filter(item => FilterMixin['idFilter'][this.idFilter](item))
+            if (this.chatNameFilter) {
+                fchats = fchats.filter(item => item.name.match(this.chatNameFilter))
+            }
+            return fchats
+        }
+    },
     methods: {
         fileSelected() {
             let f = window.sqlDBselector.files[0]
             let r = new FileReader()
+            this.dbError = 'Загрузка...'
             r.onload = () => {
                 let u8 = new Uint8Array(r.result)
                 this.dbProvider = new this.dbAdapters['sql'](false, u8)
+                this.dbProvider.dbReady.then(() => {
+                    this.dbError = false
+                    this.loadChatList()
+                })
                 this.closeDBSelector()
-                this.dbError = false
             }
             r.readAsArrayBuffer(f)
         },
@@ -105,11 +121,17 @@ export default {
             this.dbProvider.getChats().then(chats => {
                 this.chats = chats
             })
+        },
+        applyNameFilter(srch) {
+            this.chatNameFilter = srch
+            this.closeFilterSelector()
         }
     },
     mounted() {
-        if (this.dbChoice) {
+        if (this.dbChoice && this.dbChoice != 'sql') {
             this.selectDataSource(this.dbChoice, true)
+        } else {
+            this.dbSelectorOpened = true
         }
     },
     data() {
@@ -126,7 +148,8 @@ export default {
             searchOpened: false,
             dbError: false,
 			dbProvider: false,
-            idFilter: 'all'
+            idFilter: 'all',
+            chatNameFilter: '',
         }
     }
 }

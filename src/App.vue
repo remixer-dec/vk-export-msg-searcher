@@ -66,7 +66,9 @@
 			<PanelHeader>БД импортирована</PanelHeader>
 			<br><br><br>
 			<Div>
-				<Button @click="downloadDB" v-if="radioValue == 'sql'">Сохранить ещё раз</Button>
+				<Button @click="downloadDB" v-if="radioValue == 'sql'">Скачать файл ещё раз</Button>
+			</Div>
+			<Div>
 				<Button @click="mainPage">На главную</Button>
 			</Div>
 		</Panel>
@@ -190,7 +192,7 @@ export default {
 			userDBMap = undefined
 			this.activePanel = 'finalstep'
 			localStorage['vkmsg-db-sel'] = this.radioValue
-			if (this.rarioValue == 'sql') this.downloadDB()
+			if (this.radioValue == 'sql') this.downloadDB()
 		}
 	}
 }
