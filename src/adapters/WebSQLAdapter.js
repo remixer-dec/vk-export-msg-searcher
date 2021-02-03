@@ -1,3 +1,4 @@
+import FilterMixin from '../mixins/Filter'
 export default class WebSQLAdapter {
     constructor(create=true) {
         let db = openDatabase('vkdb', '1.0', 'Database with messages exported from VK', 2 * 1024 * 1024,() => {})
@@ -33,6 +34,22 @@ export default class WebSQLAdapter {
         return new Promise((resolve, reject) => {
             this.db.transaction(tx => {
                 tx.executeSql(`SELECT * FROM chats`, [], (a, b) => resolve(Array.from(b.rows), ()=>reject(0)))
+            })
+        })
+    }
+    async getUsers() {
+        return new Promise((resolve, reject) => {
+            this.db.transaction(tx => {
+                tx.executeSql(`SELECT * FROM users`, [], (a, b) => resolve(Array.from(b.rows), ()=>reject(0)))
+            })
+        })
+    }
+    async getMessages(req) {
+        return new Promise((resolve, reject) => {
+            let fil = FilterMixin.SQLFilterFormer(req)
+            this.db.transaction(tx => {
+                tx.executeSql(`SELECT * FROM messages WHERE ${fil}`, [],
+                    (a, b) => resolve(Array.from(b.rows).map(x=>{x.att = x.att?JSON.parse(x.att):x.att;return x}), ()=>reject(0)))
             })
         })
     }

@@ -2,7 +2,7 @@ const months = "янв|фев|мар|апр|мая|июн|июл|авг|сен|�
 export default class MessagePageParser {
     parse(src, chatID) {
         let parser = new DOMParser();
-        let htmlDoc = parser.parseFromString(src, 'text/html');
+        let htmlDoc = parser.parseFromString(src.replace(/<br>/g,'\n'), 'text/html');
         let items = htmlDoc.getElementsByClassName('message')
         let messages = []
         let fromDB = new Map()
@@ -40,6 +40,7 @@ export default class MessagePageParser {
                     msg.children[1].removeChild(msg.children[1].lastChild)
                 }
                 parsedMSG.txt = msg.children[1].innerText
+                console.log(parsedMSG.txt)
             }
             messages.push(parsedMSG)
         }

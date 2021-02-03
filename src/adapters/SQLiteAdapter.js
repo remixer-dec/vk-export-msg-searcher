@@ -1,4 +1,5 @@
 import initSqlJs from 'sql.js'
+import FilterMixin from '../mixins/Filter'
 export default class SQLiteAdapter {
     constructor(create=true, dbfile=false) {
         this.db = false
@@ -44,6 +45,27 @@ export default class SQLiteAdapter {
             let data = this.db.exec(`SELECT * FROM chats`)[0]
             if (data) {
                 resolve(this.normalize(data))
+            } else {
+                reject(0)
+            }
+        })
+    }
+    async getUsers() {
+        return new Promise((resolve, reject) => {
+            let data = this.db.exec(`SELECT * FROM users`)[0]
+            if (data) {
+                resolve(this.normalize(data))
+            } else {
+                reject(0)
+            }
+        })
+    }
+    async getMessages(req) {
+        return new Promise((resolve, reject) => {
+            let fil = FilterMixin.SQLFilterFormer(req)
+            let data = this.db.exec(`SELECT * FROM messages WHERE ${fil}`)[0]
+            if (data) {
+                resolve(this.normalize(data).map(x=>{x.att = x.att?JSON.parse(x.att):x.att;return x}))
             } else {
                 reject(0)
             }

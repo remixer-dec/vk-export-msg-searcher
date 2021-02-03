@@ -1,5 +1,5 @@
 <template lang="html">
-    <VKView activePanel="dialoglist">
+    <VKView :activePanel="panel">
         <Panel id="dialoglist">
             <PanelHeader>
                 Диалоги
@@ -12,7 +12,8 @@
                     </HeaderButton>
                 </template>
                 <template v-slot:right>
-                    <HeaderButton v-if="searchOpened">
+                    <HeaderButton v-if="searchOpened" @click="showDatePicker = !showDatePicker">
+                        <date-picker type="date" :open="showDatePicker" @input="dateSelected"></date-picker>
                         <vkui-icon name="newsfeed" />
                     </HeaderButton>
                     <HeaderButton @click="filterOpened = !filterOpened">
@@ -39,16 +40,38 @@
                   <TabsItem :selected="idFilter == 'groups'" @click="idFilter = 'groups'">Группы</TabsItem>
                   <TabsItem :selected="idFilter == 'chats'" @click="idFilter = 'chats'">Беседы</TabsItem>
                 </Tabs>
-                <BetterSearch placeholder="Поиск диалога" v-on:input="applyNameFilter" cache="dialogSearch"/>
+                <BetterSearch placeholder="Поиск диалогов" v-on:input="applyNameFilter" cache="dialogSearch"/>
             </HeaderContext>
             <HeaderContext :opened="searchOpened" :onClose="closeSearchBox">
-                <BetterSearch placeholder="Поиск сообщений" cache="messageSearch" />
+                <BetterSearch placeholder="Поиск сообщений" v-on:input="findMessages" cache="messageSearch" />
             </HeaderContext>
             <Group>
                 <List>
-                    <Cell v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
+                    <Cell @click="openDialog(chat.id, chat.name)" v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
                 </List>
             </Group>
+        </Panel>
+        <Panel id="searchresults">
+            <PanelHeader>
+                Результаты поиска
+                <template v-slot:left>
+                    <HeaderButton @click="panel = 'dialoglist'">
+                        <vkui-icon name="back" />
+                    </HeaderButton>
+                </template>
+            </PanelHeader>
+            <SearchResults :data="search" v-on:more="loadMoreSearchResults" v-on:chat="openDialogFromSearch"/>
+        </Panel>
+        <Panel id="dialogview">
+            <PanelHeader>
+                {{selectedChat.name}}
+                <template v-slot:left>
+                    <HeaderButton @click="panel = searchOpened?'searchresults':'dialoglist'">
+                        <vkui-icon name="back" />
+                    </HeaderButton>
+                </template>
+            </PanelHeader>
+            <MessageList :messages="msgsInSelectedChat" :chatid="selectedChat.id" v-on:prevmsg="loadMoreMessages"/>
         </Panel>
     </VKView>
 </template>
@@ -59,13 +82,19 @@ import WebSQLAdapter from '../adapters/WebSQLAdapter'
 import IDBAdapter from '../adapters/IDBAdapter'
 import FilterMixin from '../mixins/Filter'
 import BetterSearch from '../components/BetterSearch'
+import MessageList from '../components/MessageList'
+import SearchResults from '../components/SearchResults'
+import DatePicker from 'vue2-datepicker';
+import 'vue2-datepicker/index.css';
+
+
 
 export default {
     name: 'ViewerApp',
     provide: {
         webviewType: 'internal'
     },
-    components: {BetterSearch},
+    components: {BetterSearch, MessageList, DatePicker, SearchResults},
     computed: {
         filteredChats() {
             let fchats = this.chats.filter(item => FilterMixin['idFilter'][this.idFilter](item))
@@ -120,11 +149,105 @@ export default {
         loadChatList() {
             this.dbProvider.getChats().then(chats => {
                 this.chats = chats
+                this.chats.map(c => {
+                    this.chatsById[c.id] = c.name
+                })
+                this.loadUserList()
+            })
+        },
+        loadUserList() {
+            this.dbProvider.getUsers().then(users => {
+                users.map(u => {
+                    this.usersById[u.id] = u.name
+                })
             })
         },
         applyNameFilter(srch) {
             this.chatNameFilter = srch
             this.closeFilterSelector()
+        },
+        addUsername(arr) {
+            for(let i=0,l=arr.length; i<l; i++) {
+                arr[i]['uname'] = this.usersById[arr[i].uid] || ''
+            }
+            return arr
+        },
+        addChatname(arr) {
+            for(let i=0,l=arr.length; i<l; i++) {
+                arr[i]['cname'] = this.chatsById[arr[i].cid] || ''
+            }
+            return arr
+        },
+        openDialog(id, name) {
+            this.resetSelectedChat(name, id)
+            this.dbProvider.getMessages({'cid': {'=': id}, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}).then(msgs => {
+                this.addUsername(msgs)
+                this.msgsInSelectedChat = msgs.reverse()
+            })
+        },
+        loadMoreMessages({dir, mid}) {
+            let dirObj = dir > 0 ? {'>': mid} : {'<': mid}
+            if (dir == -1 && this.selectedChat.limitReached) return
+            this.dbProvider.getMessages({'cid': {'=': this.selectedChat.id},
+            id: dirObj, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}).then(msgs => {
+                if (msgs.length == 0) {
+                    this.selectedChat.limitReached = true
+                }
+                this.addUsername(msgs)
+                this.msgsInSelectedChat = [...msgs.reverse(), ...this.msgsInSelectedChat]
+            }).catch(() => {
+                this.selectedChat.limitReached = true
+            })
+        },
+        openDialogFromSearch({cid, mid}) {
+            this.resetSelectedChat(this.chats.find(c => c.id == cid).name, cid)
+            this.loadMoreMessages({dir: -1, mid: mid + 5})
+        },
+        dateSelected(date) {
+            let start = new Date(date.setHours(0))
+            let end = new Date(date.setDate(date.getDate() + 1))
+            this.showDatePicker = false
+            this.dateSearch(~~(start.getTime()/1000), ~~(end.getTime()/1000))
+        },
+        resetSelectedChat(name, cid) {
+            this.selectedChat.name = name
+            this.selectedChat.id = cid
+            this.panel = 'dialogview'
+            this.selectedChat.limitReached = false
+            this.msgsInSelectedChat = []
+        },
+        dateSearch(start, end) {
+            this.panel = 'searchresults'
+            this.dbProvider.getMessages({'date': {'<': end, '>': start}, '_order': 'id', '_order_type': 'DESC'}).then(results => {
+                this.search.results = results
+            }).catch(()=>{})
+        },
+        runSearch(text, offset) {
+            this.dbProvider.getMessages({'txt': {'LIKE': `'%${text.replace(/%|'/g,'')}%'`},
+             '_limit': 30, '_offset': offset, '_order': 'id', '_order_type': 'DESC'}).then(results => {
+                 this.search.results = [...this.search.results, ...results]
+                 this.search.offset += 30
+             }).catch(()=>{
+                 if (this.search.offset == 0) {
+                     //no results
+                 }
+             })
+        },
+        findMessages(text) {
+            this.panel = 'searchresults'
+            this.search.results = []
+            this.search.query = text
+            this.search.offset = 0
+            this.runSearch(text, 0)
+        },
+        loadMoreSearchResults() {
+            this.runSearch(this.search.query, this.search.offset)
+        }
+    },
+    watch: {
+        'search.results' : function() {
+            this.addUsername(this.search.results)
+            this.addChatname(this.search.results)
         }
     },
     mounted() {
@@ -137,6 +260,20 @@ export default {
     data() {
         return {
             chats: [],
+            chatsById: {},
+            usersById: {},
+            selectedChat: {
+                id: 0,
+                name: '',
+                limitReached: false
+            },
+            search: {
+                query: '',
+                offset: 0,
+                results: []
+            },
+            msgsInSelectedChat: [],
+            showDatePicker: false,
             dbChoice: localStorage['vkmsg-db-sel'],
             dbAdapters: {
                 idb: IDBAdapter,
@@ -150,6 +287,7 @@ export default {
 			dbProvider: false,
             idFilter: 'all',
             chatNameFilter: '',
+            panel: 'dialoglist'
         }
     }
 }
@@ -161,5 +299,17 @@ export default {
 }
 input[type=file] {
     display: none;
+}
+.mx-datepicker {
+    visibility: hidden;
+    width: 0;
+}
+.mx-datepicker-main.mx-datepicker-popup {
+    transform: translateX(130px);
+}
+.search-meta {
+    color: #ccc;
+    font-size: 12px;
+    line-height: 12px;
 }
 </style>

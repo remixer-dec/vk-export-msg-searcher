@@ -44,7 +44,7 @@ export default {
 	inheritAttrs: false,
 	computed: {
         computedPlaceholder() {
-            return this.textvalue.length > 0 ? '' : 'Поиск'
+            return this.textvalue.length > 0 ? '' : this.placeholder
         },
 		searchId() {
 			return searchId
