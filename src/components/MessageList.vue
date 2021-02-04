@@ -17,26 +17,40 @@ export default {
     props: ['messages', 'chatid'],
     mounted() {
         let itv = setInterval(() => this.$refs.dialogEnd.scrollIntoView(), 10)
+        this.scrollTarget = this.$refs.wrapper.parentElement.parentElement.parentElement
         setTimeout(()=>clearInterval(itv), 900)
-        window.addEventListener('scroll', this.scrollHandler)
+        this.scrollTarget.addEventListener('scroll', this.scrollHandler)
     },
     unmounted() {
         window.removeEventListener('scroll', this.scrollHandler)
     },
     beforeUpdate() {
-        let pos = this.$refs.wrapper.scrollHeight
-        let scroll = window.scrollY
-        let si = setInterval(() => window.scrollTo({top: scroll + (this.$refs.wrapper.scrollHeight - pos)}), 2)
-        setTimeout(() => {clearInterval(si); this.dataRequest = false}, 64)
+        //https://stackoverflow.com/questions/50074823/how-can-i-keep-scroll-position-when-add-dom-to-top
+        //TODO: find a better solution, this one is not perfect
+        //maybe use this library
+        //https://tangbc.github.io/vue-virtual-scroll-list/#/chat-room
+        let scrollTarget = this.scrollTarget
+        let pos = scrollTarget.scrollHeight  - scrollTarget.clientHeight
+        let sy = scrollTarget.scrollTop
+        let si = setInterval(() => {
+            let diff = (scrollTarget.scrollHeight  - scrollTarget.clientHeight) - pos
+            let ydiff = sy + diff
+            scrollTarget.scrollTop = ydiff
+        }, 2)
+        setTimeout(() => {clearInterval(si); this.dataRequest = false}, 300)
     },
     methods: {
         scrollHandler() {
-            if (window.scrollY < 200) {
-                if (!this.dataRequest && this.messages.length > 0) {
-                    this.dataRequest = true
-                    this.$emit('prevmsg', {dir: -1, mid: this.messages[0].id})
+            //https://gomakethings.com/detecting-when-a-visitor-has-stopped-scrolling-with-vanilla-javascript/
+            window.clearTimeout(this.isScrolling)
+            this.isScrolling = setTimeout(() => {
+                if (this.scrollTarget.scrollTop < 200) {
+                    if (!this.dataRequest && this.messages.length > 0) {
+                        this.dataRequest = true
+                        this.$emit('prevmsg', {dir: -1, mid: this.messages[0].id})
+                    }
                 }
-            }
+            }, 90)
         },
         activateLinks(txt) {
             var urlreg = /((https?:\/\/|)[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/img
@@ -83,6 +97,8 @@ export default {
     data() {
         return {
             cachedDate: 0,
+            isScrolling: 0,
+            scrollTarget: false,
             dataRequest: false
         }
     }
@@ -90,18 +106,13 @@ export default {
 </script>
 
 <style lang="css" scoped>
-a {
-    color: #5181b8
-}
 .messagelist-wrapper {
     display: flex;
     flex-direction: column;
     max-width: 800px;
     margin: 0 auto;
     padding: 16px 0;
-    background: rgba(0,0,0,.02);
     position: relative;
-    transition: height 0.66s ease-out;
 }
 .message {
     background: #fff;
@@ -117,6 +128,7 @@ a {
 }
 .message.message-right {
     margin-left: auto;
+    background: #f2f7ff;
 }
 .bottomtext {
     position: absolute;
@@ -147,6 +159,7 @@ a {
     max-height: 270px;
     margin: 2px;
     max-width: 100%;
+    height: auto;
 }
 .attach {
     color: #ccc;
@@ -154,5 +167,8 @@ a {
 .forwarded {
     font-size: 12px;
     margin: 2px;
+}
+.messagelist-wrapper a {
+    color: #5181b8
 }
 </style>

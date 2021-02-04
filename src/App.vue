@@ -6,9 +6,9 @@
 			<Group title="Выберете, куда будут сохранены сообщения">
 				<FormLayout class="leftform">
 					<Div>
-						<Radio default modelValue="idb" name="radio" value="idb">IndexedDB (этот браузер)</Radio>
-						<Radio name="radio" value="wql">WebSQL (этот браузер) (только для браузеров на основе Chromium)</Radio>
-						<Radio name="radio" value="sql">SQLite3 (файл)</Radio>
+						<Radio name="radio" value="idb">IndexedDB (этот браузер) (очень медленно)</Radio>
+						<Radio default modelValue="wql" name="radio" value="wql">WebSQL (этот браузер) (только для браузеров на основе Chromium)</Radio>
+						<Radio name="radio" value="sql">SQLite (файл)</Radio>
 					</Div>
 					<Div>
 						<Button level="outline" @click="dbSelected">Далее</Button>
@@ -28,6 +28,12 @@
 				</Div>
 				<CellButton level="danger" v-if="errorMsg">{{errorMsg}}</CellButton>
 			</Group>
+			<Div v-if="storageQuotaSupported && storage.quota < 400000000000 && !persisted && radioValue != 'sql'">
+					Доступного места в хранилище браузера может не хватить для крупного архива сообщений. Сейчас сайту доступно {{~~(storage.quota / 1000000)}} МБ.
+					Освободите память, или дайте сайту разрешение на постоянное хранилище.
+					В браузерах на основе Chromium для этого необходимо поднять приоритет сайта, для этого например можно включить у него уведомления.
+					После чего необходимо обновить страницу и это сообщение исчезнет.
+			</Div>
 		</Panel>
 		<Panel id="loading">
 			<PanelHeader>Загрузка</PanelHeader>
@@ -57,6 +63,11 @@
 					<Group title="Использование оперативной памяти" v-if="memoryUseSupported">
 						<InfoRow :title="memory + '%'">
 							<Progress :value="memory" />
+						</InfoRow>
+					</Group>
+					<Group title="Использование постоянной памяти" v-if="storageQuotaSupported && radioValue != 'sql'">
+						<InfoRow :title="storage.percent + '%'">
+							<Progress :value="storage.percent" />
 						</InfoRow>
 					</Group>
 				</Div>
@@ -98,6 +109,8 @@ export default {
 			progress2: 0,
 			progress2text: '',
 			memory: 0,
+			storage: {quota: Infinity, usage: 0, percent:0},
+			storageQuotaSupported: navigator.storage && navigator.storage.estimate,
 			memoryUseSupported: window.performance && window.performance.memory,
 			dbAdapters: {
 				idb: IDBAdapter,
@@ -105,15 +118,29 @@ export default {
 				sql: SQLiteAdapter
 			},
 			dbProvider: false,
-			radioValue: 'idb'
+			persisted: false,
+			radioValue: 'wql'
 		}
 	},
 	components: {},
 	mixins: { FileOperationMixin },
 	methods: {
+		async getStorageData() {
+			if (this.storageQuotaSupported) {
+				this.storage = await navigator.storage.estimate()
+				this.storage.percent = ~~(this.storage.usage / this.storage.quota * 100)
+			}
+		},
 		dbSelected() {
 			this.radioValue = document.querySelector('input[type=radio]:checked').value
 			this.dbProvider = new this.dbAdapters[this.radioValue](true)
+			if (this.radioValue != 'sql' && navigator.storage && navigator.storage.persist) {
+				navigator.storage.persist().then(ps => {
+					this.persisted = ps
+				})
+			}
+			this.getStorageData()
+			console.log(this)
 			this.activePanel = 'importSourceSelector'
 		},
 		metaLoadingSuccess(data) {
@@ -163,6 +190,7 @@ export default {
 					fc++
 					if (i == 0) {
 						this.progress2text = 'Импорт сообщений из диалога ' + data.chats[id]
+						this.getStorageData()
 						this.memory = this.memoryUseSupported
 							? ~~((window.performance.memory.usedJSHeapSize / window.performance.memory.jsHeapSizeLimit) * 100)
 							: 0
@@ -175,7 +203,7 @@ export default {
 					)
 
 					for (let msg of mpd.messages) {
-						this.dbProvider.addMessage(msg)
+						await this.dbProvider.addMessage(msg)
 						msg = undefined
 					}
 
@@ -184,7 +212,7 @@ export default {
 					this.progress1 = ~~((fc / fileCount) * 100)
 					this.progress2 = ~~((i / l) * 100)
 				}
-				this.dbProvider.addChat(id, data.chats[id])
+				this.dbProvider.addChat(parseInt(id), data.chats[id])
 			}
 			for (let usr of userDBMap.entries()) {
 				this.dbProvider.addUser(usr)

@@ -29,7 +29,7 @@
                     <Cell @click="selectDataSource('idb')">Использовать IndexedDB</Cell>
                     <Cell @click="selectDataSource('wql')">Использовать WebSQL</Cell>
                     <label for="sqlDBselector"><Cell>Загрузить из файла SQLite</Cell></label>
-                    <CellButton level="danger" v-if="dbError">{{dbError}}</CellButton>
+                    <CellButton level="danger" id="dbError" v-if="dbError">{{dbError}}</CellButton>
                     <input type="file" id="sqlDBselector" @change="fileSelected">
                 </List>
             </HeaderContext>
@@ -45,11 +45,20 @@
             <HeaderContext :opened="searchOpened" :onClose="closeSearchBox">
                 <BetterSearch placeholder="Поиск сообщений" v-on:input="findMessages" cache="messageSearch" />
             </HeaderContext>
-            <Group>
+            <Group v-if="filteredChats.length > 0">
                 <List>
                     <Cell @click="openDialog(chat.id, chat.name)" v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
                 </List>
             </Group>
+            <div v-else>
+                <Div v-if="chats.length > 0">Нет результатов</Div>
+                <div v-else>
+                    <Div v-if="dbProvider">
+                        <ScreenSpinner />
+                    </Div>
+                    <Div v-else>Выберете источник данных</Div>
+                </div>
+            </div>
         </Panel>
         <Panel id="searchresults">
             <PanelHeader>
@@ -60,7 +69,8 @@
                     </HeaderButton>
                 </template>
             </PanelHeader>
-            <SearchResults :data="search" v-on:more="loadMoreSearchResults" v-on:chat="openDialogFromSearch"/>
+            <Div v-if="search.results.length == 0">Нет результатов</Div>
+            <SearchResults v-else :data="search" v-on:more="loadMoreSearchResults" v-on:chat="openDialogFromSearch"/>
         </Panel>
         <Panel id="dialogview">
             <PanelHeader>
@@ -88,7 +98,6 @@ import DatePicker from 'vue2-datepicker';
 import 'vue2-datepicker/index.css';
 
 
-
 export default {
     name: 'ViewerApp',
     provide: {
@@ -99,7 +108,8 @@ export default {
         filteredChats() {
             let fchats = this.chats.filter(item => FilterMixin['idFilter'][this.idFilter](item))
             if (this.chatNameFilter) {
-                fchats = fchats.filter(item => item.name.match(this.chatNameFilter))
+                let fregx = new RegExp(this.chatNameFilter, 'i')
+                fchats = fchats.filter(item => item.name.match(fregx))
             }
             return fchats
         }
@@ -294,6 +304,9 @@ export default {
 </script>
 
 <style lang="css">
+.View__panel .View__panel-in{
+    overflow: auto !important;
+}
 .PanelHeader-left-in.PanelHeader-left-in--brand {
     display: flex;
 }
@@ -305,11 +318,21 @@ input[type=file] {
     width: 0;
 }
 .mx-datepicker-main.mx-datepicker-popup {
-    transform: translateX(130px);
+    transform: translateX(120px);
 }
 .search-meta {
     color: #ccc;
     font-size: 12px;
     line-height: 12px;
+}
+
+#dbError {
+    text-align: center;
+}
+#dbError .CellButton__content {
+    width: 100%
+}
+.dialogview .Panel__in {
+    will-change: scroll-position;
 }
 </style>

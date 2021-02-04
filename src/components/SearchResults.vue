@@ -1,5 +1,5 @@
 <template lang="html">
-    <div class="wrapper">
+    <div class="wrapper" ref="reswrapper">
         <Group>
             <List>
                 <Cell v-for="(msg, index) in data.results" :key="index" @click="loadDialog(msg.cid, msg.id)">
@@ -15,21 +15,22 @@
 <script>
 export default {
     mounted() {
-        window.addEventListener('scroll', this.scrollHandler)
+        this.scrollTarget = this.$refs.reswrapper.parentElement.parentElement.parentElement
+        this.scrollTarget.addEventListener('scroll', this.scrollHandler)
     },
     unmounted() {
-        window.removeEventListener('scroll', this.scrollHandler)
+        this.scrollTarget.removeEventListener('scroll', this.scrollHandler)
     },
     beforeUpdate() {
         this.dataRequest = false
     },
     data() {
-        return {dataRequest: false}
+        return {dataRequest: false, scrollTarget: false}
     },
     props: ['data'],
     methods: {
         scrollHandler() {
-            if ((window.scrollY > (document.body.offsetHeight + document.body.scrollTop) - 200) && !this.dataRequest) {
+            if ((this.scrollTarget.scrollTop > (this.scrollTarget.scrollHeight - document.body.offsetHeight) - 200) && !this.dataRequest) {
                 this.dataRequest = true
                 this.$emit('more')
             }

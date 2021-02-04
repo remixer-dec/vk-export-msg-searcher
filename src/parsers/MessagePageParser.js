@@ -40,7 +40,6 @@ export default class MessagePageParser {
                     msg.children[1].removeChild(msg.children[1].lastChild)
                 }
                 parsedMSG.txt = msg.children[1].innerText
-                console.log(parsedMSG.txt)
             }
             messages.push(parsedMSG)
         }

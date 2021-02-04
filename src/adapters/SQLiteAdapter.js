@@ -21,7 +21,7 @@ export default class SQLiteAdapter {
     addUser(uObj) {
         this.db.run(`INSERT INTO users (id, name) VALUES (${uObj[0]}, '${this.q(uObj[1])}')`)
     }
-    addMessage(mObj) {
+    async addMessage(mObj) {
         let query = `INSERT INTO messages (id, uid, cid, txt, att, date)
         VALUES (${mObj.id}, ${mObj.from}, ${mObj.cid}, '${this.q(mObj.txt)}', '${mObj.att.length > 0 ? (this.q(JSON.stringify(mObj.att))) : ""}', ${mObj.date})`
         this.db.run(query)
