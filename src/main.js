@@ -10,9 +10,12 @@ import '@urapywka/vkui-icons/dist/vkui-icons.css'
 import PortalVue from 'portal-vue'
 Vue.use(PortalVue)
 
-
-
-new Vue({
+const app = new Vue({
   components: {...components, ...icons},
   render: h => h(MainScreen),
 }).$mount('#app')
+
+
+window.onhashchange = function(e) {
+    app.$emit('back')
+}

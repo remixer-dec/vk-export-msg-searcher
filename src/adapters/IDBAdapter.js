@@ -29,7 +29,6 @@ export default class IDBAdapter {
         return await this.db.chats.toArray()
     }
     async getMessages(req) {
-        console.log(req, this.db.messages)
         let ops = {
             '<' : 'bellow',
             '>' : 'above',

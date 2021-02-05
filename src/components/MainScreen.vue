@@ -35,8 +35,18 @@ export default {
         }
     },
     components: {App, ViewerApp},
+    mounted() {
+        if (window.location.hash.length > 1) {
+            window.location.replace('#')
+        }
+    },
     methods: {
         selectView(view) {
+            if (view == 1) {
+                history.pushState({}, 'Импорт сообщений', '#import')
+            } else {
+                history.pushState({}, 'Просмотрщик сообщений', '#viewer')
+            }
             this.viewSelected = view
         }
     }

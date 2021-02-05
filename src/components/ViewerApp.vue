@@ -66,7 +66,7 @@
             <PanelHeader>
                 Результаты поиска
                 <template v-slot:left>
-                    <HeaderButton @click="panel = 'dialoglist'">
+                    <HeaderButton @click="goBack()">
                         <vkui-icon name="back" />
                     </HeaderButton>
                 </template>
@@ -78,7 +78,7 @@
             <PanelHeader>
                 {{selectedChat.name}}
                 <template v-slot:left>
-                    <HeaderButton @click="panel = searchOpened?'searchresults':'dialoglist'">
+                    <HeaderButton @click="goBack()">
                         <vkui-icon name="back" />
                     </HeaderButton>
                 </template>
@@ -155,8 +155,12 @@ export default {
         closeSearchBox() {
             this.searchOpened = false
         },
+        goBack() {
+            history.back()
+        },
 		mainPage() {
 			this.$emit('gohome')
+            window.location.replace('#')
 		},
         loadChatList() {
             this.dbProvider.getChats().then(chats => {
@@ -192,6 +196,7 @@ export default {
         },
         openDialog(id, name) {
             this.resetSelectedChat(name, id)
+            history.pushState({}, 'Просмотр сообщений', '#viewer/messages')
             this.selectedChat.bottomLimitReached = true
             this.dbProvider.getMessages({'cid': {'=': id}, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}).then(msgs => {
                 this.addUsername(msgs)
@@ -223,6 +228,7 @@ export default {
                 this.selectedChat.bottomLimitReached = true
         },
         openDialogFromSearch({cid, mid}) {
+            history.pushState({}, 'Просмотр сообщений', '#viewer/messages')
             this.resetSelectedChat(this.chats.find(c => c.id == cid).name, cid)
             this.loadMoreMessages({dir: -1, mid: mid + 5})
         },
@@ -241,6 +247,7 @@ export default {
             this.msgsInSelectedChat = []
         },
         dateSearch(start, end) {
+            history.pushState({}, 'Поиск по дате', '#viewer/searchbydate')
             this.panel = 'searchresults'
             this.dbProvider.getMessages({'date': {'<': end, '>': start}, '_order': 'id', '_order_type': 'DESC'}).then(results => {
                 this.search.results = results
@@ -259,6 +266,7 @@ export default {
         },
         findMessages(text) {
             if (text == '') return
+            history.pushState({}, 'Поиск сообщений', '#viewer/search')
             this.panel = 'searchresults'
             this.search.results = []
             this.search.query = text
@@ -274,6 +282,28 @@ export default {
             this.addUsername(this.search.results)
             this.addChatname(this.search.results)
         }
+    },
+    created() {
+        this.$root.$off('back')
+        this.$root.$on('back', () => {
+            switch (this.panel) {
+                case 'dialoglist':
+                    if (this.filterOpened || this.searchOpened || this.dbSelectorOpened) {
+                        this.filterOpened = false
+                        this.searchOpened = false
+                        this.dbSelectorOpened = false
+                    } else {
+                        this.mainPage()
+                    }
+                break
+                case 'searchresults':
+                    this.panel = 'dialoglist'
+                break
+                case 'dialogview':
+                    this.panel = this.searchOpened? 'searchresults' : 'dialoglist'
+                break
+            }
+        })
     },
     mounted() {
         if (this.dbChoice && this.dbChoice != 'sql') {

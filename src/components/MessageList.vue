@@ -22,6 +22,9 @@ export default {
     mounted() {
         this.$refs.vsl.scrollToBottom()
         setTimeout(() => {
+            this.$refs.vsl.scrollToBottom()
+        }, 100)
+        setTimeout(() => {
             this.dataRequest = false
         }, 600)
     },
@@ -32,7 +35,7 @@ export default {
         }
     },
     updated() {
-        if (this.dir) {
+        if (this.msgLoadDir) {
             this.dataRequest = false
         }
     },
@@ -68,7 +71,7 @@ export default {
 }
 </script>
 
-<style lang="css" >
+<style lang="css">
 .msg-stream {
     overflow-y: auto;
     min-height: 100%;
