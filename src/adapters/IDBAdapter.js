@@ -39,7 +39,7 @@ export default class IDBAdapter {
         let mdb = this.db.messages
 
         if ('cid' in req && 'id' in req) {
-            mdb = mdb.where('cid').equals(req.cid['=']).and(x => x.id < req.id['<'])
+            mdb = mdb.where('cid').equals(req.cid['=']).and(x => '<' in req.id ? (x.id < req.id['<']) : (x.id > req.id['>']))
         } else if ('date' in req) {
             mdb = mdb.where('date').between(req.date['>'], req.date['<'])
         } else {

@@ -47,7 +47,9 @@
             </HeaderContext>
             <Group v-if="filteredChats.length > 0">
                 <List>
-                    <Cell @click="openDialog(chat.id, chat.name)" v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">{{chat.name}}</Cell>
+                    <Cell @click="openDialog(chat.id, chat.name)" v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">
+                        {{chat.name}}
+                    </Cell>
                 </List>
             </Group>
             <div v-else>
@@ -81,7 +83,7 @@
                     </HeaderButton>
                 </template>
             </PanelHeader>
-            <MessageList :messages="msgsInSelectedChat" :chatid="selectedChat.id" v-on:prevmsg="loadMoreMessages"/>
+            <MessageList :messages="msgsInSelectedChat" :chatid="selectedChat.id" v-on:prevmsg="loadMoreMessages" ref="msglist"/>
         </Panel>
     </VKView>
 </template>
@@ -190,6 +192,7 @@ export default {
         },
         openDialog(id, name) {
             this.resetSelectedChat(name, id)
+            this.selectedChat.bottomLimitReached = true
             this.dbProvider.getMessages({'cid': {'=': id}, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}).then(msgs => {
                 this.addUsername(msgs)
                 this.msgsInSelectedChat = msgs.reverse()
@@ -197,17 +200,27 @@ export default {
         },
         loadMoreMessages({dir, mid}) {
             let dirObj = dir > 0 ? {'>': mid} : {'<': mid}
-            if (dir == -1 && this.selectedChat.limitReached) return
-            this.dbProvider.getMessages({'cid': {'=': this.selectedChat.id},
-            id: dirObj, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}).then(msgs => {
+            if ((dir == -1 && this.selectedChat.topLimitReached) || dir == 1 && this.selectedChat.bottomLimitReached) {
+                this.$refs.msglist.dataRequest = false
+                return
+            }
+
+            let request = {'cid': {'=': this.selectedChat.id}, id: dirObj, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}
+            this.dbProvider.getMessages(request).then(msgs => {
                 if (msgs.length == 0) {
-                    this.selectedChat.limitReached = true
+                    this.limitReached(dir)
                 }
                 this.addUsername(msgs)
-                this.msgsInSelectedChat = [...msgs.reverse(), ...this.msgsInSelectedChat]
+                this.msgsInSelectedChat = dir < 0 ? [...msgs.reverse(), ...this.msgsInSelectedChat] : [...this.msgsInSelectedChat, ...msgs.reverse()]
             }).catch(() => {
-                this.selectedChat.limitReached = true
+                this.limitReached(dir)
             })
+        },
+        limitReached(dir) {
+            if (dir == -1)
+                this.selectedChat.topLimitReached = true
+            else
+                this.selectedChat.bottomLimitReached = true
         },
         openDialogFromSearch({cid, mid}) {
             this.resetSelectedChat(this.chats.find(c => c.id == cid).name, cid)
@@ -223,7 +236,8 @@ export default {
             this.selectedChat.name = name
             this.selectedChat.id = cid
             this.panel = 'dialogview'
-            this.selectedChat.limitReached = false
+            this.selectedChat.topLimitReached = false
+            this.selectedChat.bottomLimitReached = false
             this.msgsInSelectedChat = []
         },
         dateSearch(start, end) {
@@ -237,13 +251,14 @@ export default {
              '_limit': 30, '_offset': offset, '_order': 'id', '_order_type': 'DESC'}).then(results => {
                  this.search.results = [...this.search.results, ...results]
                  this.search.offset += 30
-             }).catch(()=>{
+             }).catch(() => {
                  if (this.search.offset == 0) {
                      //no results
                  }
              })
         },
         findMessages(text) {
+            if (text == '') return
             this.panel = 'searchresults'
             this.search.results = []
             this.search.query = text
@@ -275,7 +290,8 @@ export default {
             selectedChat: {
                 id: 0,
                 name: '',
-                limitReached: false
+                topLimitReached: false,
+                bottomLimitReached: false
             },
             search: {
                 query: '',
@@ -304,9 +320,6 @@ export default {
 </script>
 
 <style lang="css">
-.View__panel .View__panel-in{
-    overflow: auto !important;
-}
 .PanelHeader-left-in.PanelHeader-left-in--brand {
     display: flex;
 }
@@ -332,7 +345,7 @@ input[type=file] {
 #dbError .CellButton__content {
     width: 100%
 }
-.dialogview .Panel__in {
+.msg-stream {
     will-change: scroll-position;
 }
 </style>
