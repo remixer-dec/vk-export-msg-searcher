@@ -28,7 +28,7 @@
 				</Div>
 				<CellButton level="danger" v-if="errorMsg">{{errorMsg}}</CellButton>
 			</Group>
-			<Div v-if="storageQuotaSupported && storage.quota < 400000000000 && !persisted && radioValue != 'sql'">
+			<Div v-if="storageQuotaSupported && storage.quota < 400000000 && !persisted && radioValue != 'sql'">
 					Доступного места в хранилище браузера может не хватить для крупного архива сообщений. Сейчас сайту доступно {{~~(storage.quota / 1000000)}} МБ.
 					Освободите память, или дайте сайту разрешение на постоянное хранилище.
 					В браузерах на основе Chromium для этого необходимо поднять приоритет сайта, для этого например можно включить у него уведомления.

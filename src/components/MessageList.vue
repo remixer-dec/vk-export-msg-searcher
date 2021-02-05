@@ -48,7 +48,8 @@ export default {
                 this.dataRequest = true
                 this.msgLoadDir = dir
                 this.firstMid = this.messages[0].id
-                this.$emit('prevmsg', {dir, mid: this.firstMid})
+                let lastMid = this.messages[this.messages.length-1].id
+                this.$emit('prevmsg', {dir, mid: dir < 0 ? this.firstMid : lastMid })
             }
         },
         fixPosition() {

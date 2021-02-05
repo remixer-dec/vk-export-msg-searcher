@@ -7,8 +7,15 @@ export default class FolderContentAdapter {
         return this.filenames
     }
     async getFileContent(filepath) {
-        let decoder = new TextDecoder("windows-1251");
-        let file = Array.from(this.src.files).find(x => x.webkitRelativePath == filepath)
-        return decoder.decode(new Uint8Array(await file.arrayBuffer()))
+        return new Promise((resolve) => {
+            let reader = new FileReader()
+            let file = Array.from(this.src.files).find(x => x.webkitRelativePath == filepath)
+            reader.onload = function() {
+                let arrayBuffer = new Uint8Array(reader.result)
+                let decoder = new TextDecoder("windows-1251");
+                resolve(decoder.decode(arrayBuffer))
+            }
+            reader.readAsArrayBuffer(file)
+        })
     }
 }

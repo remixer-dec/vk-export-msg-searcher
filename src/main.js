@@ -16,6 +16,6 @@ const app = new Vue({
 }).$mount('#app')
 
 
-window.onhashchange = function(e) {
+window.onhashchange = function() {
     app.$emit('back')
 }

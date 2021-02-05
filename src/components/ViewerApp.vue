@@ -210,15 +210,17 @@ export default {
                 return
             }
 
-            let request = {'cid': {'=': this.selectedChat.id}, id: dirObj, '_limit': 30, '_order': 'id', '_order_type': 'DESC'}
+            let request = {'cid': {'=': this.selectedChat.id}, id: dirObj, '_limit': 30, '_order': 'id', '_order_type': (dir == -1) ? 'DESC' : 'ASC'}
             this.dbProvider.getMessages(request).then(msgs => {
                 if (msgs.length == 0) {
                     this.limitReached(dir)
+                    this.$refs.msglist.dataRequest = false
                 }
                 this.addUsername(msgs)
-                this.msgsInSelectedChat = dir < 0 ? [...msgs.reverse(), ...this.msgsInSelectedChat] : [...this.msgsInSelectedChat, ...msgs.reverse()]
+                this.msgsInSelectedChat = dir < 0 ? [...msgs.reverse(), ...this.msgsInSelectedChat] : [...this.msgsInSelectedChat, ...msgs]
             }).catch(() => {
                 this.limitReached(dir)
+                this.$refs.msglist.dataRequest = false
             })
         },
         limitReached(dir) {

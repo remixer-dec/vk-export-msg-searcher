@@ -1,6 +1,6 @@
 <template lang="html">
         <div class="message" :class="{'message-right': source.uid == 0, 'message-plus-date': date != ''}" :set="date = getDate(source.date)">
-            <div class="date">{{date}}</div>
+            <div class="date" v-if="date">{{date}}</div>
             <span v-html="activateLinks(source.txt)"></span>
             <div v-html="getAttachmentsHTML(source)"></div>
             <div class="bottomtext">
