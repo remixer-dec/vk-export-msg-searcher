@@ -1,0 +1,16 @@
+{
+    "theme_color": "#7190b2",
+    "background_color": "#edeef0",
+    "display": "fullscreen",
+    "scope": "/",
+    "start_url": "/",
+    "app_name": "VK Export Viewer",
+    "short_name": "VK MSG",
+    "icons": [
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
