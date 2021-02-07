@@ -47,9 +47,16 @@
             </HeaderContext>
             <Group v-if="filteredChats.length > 0" :class="{'blurred': searchOpened || filterOpened}">
                 <List>
-                    <Cell @click="openDialog(chat.id, chat.name)" v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">
-                        {{chat.name}}
-                    </Cell>
+                    <VirtualList
+                    :data-sources="filteredChats"
+                    :data-key="'id'"
+                    :data-component="dialogListItemComponent"
+                    :estimate-size="44"
+                    :keeps="40"
+                    :extra-props="{dialogOpener: openDialog}"
+                    :page-mode="true"
+                    item-class="Cell Cell--ios">
+                    </VirtualList>
                 </List>
             </Group>
             <div v-else>
@@ -93,11 +100,14 @@ import SQLiteAdapter from '../adapters/SQLiteAdapter'
 import WebSQLAdapter from '../adapters/WebSQLAdapter'
 import IDBAdapter from '../adapters/IDBAdapter'
 import FilterMixin from '../mixins/Filter'
-import BetterSearch from '../components/BetterSearch'
-import MessageList from '../components/MessageList'
-import SearchResults from '../components/SearchResults'
+import BetterSearch from './BetterSearch'
+import MessageList from './MessageList'
+import SearchResults from './SearchResults'
 import DatePicker from 'vue2-datepicker';
 import 'vue2-datepicker/index.css';
+import VirtualList from 'vue-virtual-scroll-list'
+import DialogListItem from './DialogListItem'
+
 
 
 export default {
@@ -105,7 +115,7 @@ export default {
     provide: {
         webviewType: 'internal'
     },
-    components: {BetterSearch, MessageList, DatePicker, SearchResults},
+    components: {BetterSearch, MessageList, DatePicker, SearchResults, VirtualList},
     computed: {
         filteredChats() {
             let fchats = this.chats.filter(item => FilterMixin['idFilter'][this.idFilter](item))
@@ -350,7 +360,8 @@ export default {
 			dbProvider: false,
             idFilter: 'all',
             chatNameFilter: '',
-            panel: 'dialoglist'
+            panel: 'dialoglist',
+            dialogListItemComponent: DialogListItem
         }
     }
 }
