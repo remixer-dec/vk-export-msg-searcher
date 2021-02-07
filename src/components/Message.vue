@@ -4,7 +4,7 @@
             <span v-html="activateLinks(source.txt)"></span>
             <div v-html="getAttachmentsHTML(source)"></div>
             <div class="bottomtext">
-                <span class="msgauthor" v-if="source.cid >= 2000000000">{{source.uname}} в </span>
+                <span class="msgauthor" v-if="source.cid >= 2000000000">{{source.uname}} в</span>
                 {{getTime(source.date)}}
             </div>
         </div>

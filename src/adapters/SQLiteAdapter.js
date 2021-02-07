@@ -4,7 +4,7 @@ export default class SQLiteAdapter {
     constructor(create=true, dbfile=false) {
         this.db = false
         this.dbReady = new Promise((resolve, reject) => {
-            initSqlJs({locateFile: (f) => '/' + f}).then((SQL) => {
+            initSqlJs({locateFile: (f) => './' + f}).then((SQL) => {
                 if (create) {
                     const db = new SQL.Database();
                     this.db = db

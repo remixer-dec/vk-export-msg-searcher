@@ -6,9 +6,9 @@
 			<Group title="Выберете, куда будут сохранены сообщения">
 				<FormLayout class="leftform">
 					<Div>
-						<Radio name="radio" value="idb">IndexedDB (этот браузер) (очень медленно)</Radio>
-						<Radio default modelValue="wql" name="radio" value="wql">WebSQL (этот браузер) (только для браузеров на основе Chromium)</Radio>
-						<Radio name="radio" value="sql">SQLite (файл)</Radio>
+						<Radio name="radio" value="idb">IndexedDB (этот браузер) медленно, просмотр + поиск по слову или дате</Radio>
+						<Radio default modelValue="wql" name="radio" value="wql">WebSQL (этот браузер) очень медленно, просмотр + полноценный поиск, только для браузеров на основе Chromium</Radio>
+						<Radio name="radio" value="sql">SQLite (файл) быстро, просмотр + полноценный поиск, потребляет много оперативной памяти</Radio>
 					</Div>
 					<Div>
 						<Button level="outline" @click="dbSelected">Далее</Button>
@@ -17,7 +17,7 @@
 			</Group>
 		</Panel>
 		<Panel id="importSourceSelector">
-			<PanelHeader>Импорт сообщений из архива ВК</PanelHeader>
+			<PanelHeader>Импорт из архива ВК</PanelHeader>
 			<br>
 			<Group>
 				<Div>
@@ -76,8 +76,11 @@
 		<Panel id="finalstep">
 			<PanelHeader>БД импортирована</PanelHeader>
 			<br><br><br>
-			<Div>
-				<Button @click="downloadDB" v-if="radioValue == 'sql'">Скачать файл ещё раз</Button>
+			<Div v-if="radioValue == 'sql'">
+				<Button @click="downloadDB">Скачать файл ещё раз</Button>
+			</Div>
+			<Div v-if="radioValue == 'sql'">
+				<Button @click="useRAMDB">Перейти к просмотру</Button>
 			</Div>
 			<Div>
 				<Button @click="mainPage">На главную</Button>
@@ -130,6 +133,11 @@ export default {
 				this.storage = await navigator.storage.estimate()
 				this.storage.percent = ~~(this.storage.usage / this.storage.quota * 100)
 			}
+		},
+		useRAMDB() {
+			console.log(this.$root)
+			this.$root.db = this.dbProvider
+			this.$parent.selectView(2)
 		},
 		dbSelected() {
 			this.radioValue = document.querySelector('input[type=radio]:checked').value

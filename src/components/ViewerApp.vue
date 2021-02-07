@@ -45,7 +45,7 @@
             <HeaderContext :opened="searchOpened" :onClose="closeSearchBox">
                 <BetterSearch placeholder="Поиск сообщений" v-on:input="findMessages" cache="messageSearch" />
             </HeaderContext>
-            <Group v-if="filteredChats.length > 0">
+            <Group v-if="filteredChats.length > 0" :class="{'blurred': searchOpened || filterOpened}">
                 <List>
                     <Cell @click="openDialog(chat.id, chat.name)" v-for="(chat, index) in filteredChats" :key="index" :cid="chat.id">
                         {{chat.name}}
@@ -311,7 +311,12 @@ export default {
         if (this.dbChoice && this.dbChoice != 'sql') {
             this.selectDataSource(this.dbChoice, true)
         } else {
-            this.dbSelectorOpened = true
+            if (!this.$root.db) {
+                this.dbSelectorOpened = true
+            } else {
+                this.dbProvider = this.$root.db
+                this.loadChatList()
+            }
         }
     },
     data() {
@@ -379,5 +384,8 @@ input[type=file] {
 }
 .msg-stream {
     will-change: scroll-position;
+}
+.blurred {
+    filter:blur(2px)
 }
 </style>

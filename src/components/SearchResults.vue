@@ -3,7 +3,7 @@
         <Group>
             <List>
                 <Cell v-for="(msg, index) in data.results" :key="index" @click="loadDialog(msg.cid, msg.id)">
-                    {{msg.txt}}
+                    {{getShortText(msg.txt)}}
                     <div class="search-meta">{{msg.uname}} <span v-if="msg.uid == msg.cid">в личном сообщении </span>
                         <span v-else>в диалоге {{msg.cname}} </span>в {{getDate(msg.date)}}</div>
                 </Cell>
@@ -15,11 +15,11 @@
 <script>
 export default {
     mounted() {
-        this.scrollTarget = this.$refs.reswrapper.parentElement.parentElement.parentElement
-        this.scrollTarget.addEventListener('scroll', this.scrollHandler)
+        this.scrollTarget = document.body.parentElement
+        window.addEventListener('scroll', this.scrollHandler)
     },
     unmounted() {
-        this.scrollTarget.removeEventListener('scroll', this.scrollHandler)
+        window.removeEventListener('scroll', this.scrollHandler)
     },
     beforeUpdate() {
         this.dataRequest = false
@@ -29,6 +29,12 @@ export default {
     },
     props: ['data'],
     methods: {
+        getShortText(text) {
+            let lText = text.toLowerCase()
+            let sTerm = this.data.query.toLowerCase()
+            let index = lText.indexOf(sTerm)
+            return text.slice(index > 40? text.indexOf(' ', index - 40) : 0 , index + 200)
+        },
         scrollHandler() {
             if ((this.scrollTarget.scrollTop > (this.scrollTarget.scrollHeight - document.body.offsetHeight) - 200) && !this.dataRequest) {
                 this.dataRequest = true

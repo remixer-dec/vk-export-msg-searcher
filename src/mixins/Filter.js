@@ -13,15 +13,16 @@ const FilterMixin = {
             if (rowIteration != 0) {
                 txt += ' AND '
             }
-            txt += rowName
-            txt += ' '
+
+            txt += 'LIKE' in req[rowName] ? `LOWER( ${rowName} ) ` : (rowName + ' ')
+
             let opIteration = 0
             for (let operator in req[rowName]) {
                 if (opIteration != 0) {
                     txt += (' AND ' + rowName + ' ')
                 }
                 txt += operator + ' '
-                txt += req[rowName][operator]
+                txt += operator == 'LIKE' ? req[rowName][operator].toLowerCase() : req[rowName][operator]
                 opIteration++
             }
             rowIteration++
