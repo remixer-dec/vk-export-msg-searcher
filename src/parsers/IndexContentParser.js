@@ -1,7 +1,7 @@
 export default class IndexContentParser {
     parse(src) {
-        let parser = new DOMParser();
-        let htmlDoc = parser.parseFromString(src, 'text/html');
+        let parser = new DOMParser()
+        let htmlDoc = parser.parseFromString(src, 'text/html')
         let items = htmlDoc.getElementsByClassName('item')
         let names = {}
         for (let dialog of items) {

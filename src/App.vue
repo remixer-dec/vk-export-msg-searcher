@@ -85,6 +85,10 @@
 			<Div>
 				<Button @click="mainPage">На главную</Button>
 			</Div>
+			<Div v-if="importErrors > 0">
+				Не удалось импортировать некоторые сообщения ({{importErrors}})<br>
+				Причина: {{importErrorMsg}}
+			</Div>
 		</Panel>
 	</VKView>
 	<input type="file" id="dirselect" webkitdirectory directory @change="dirSelected" />
@@ -111,6 +115,8 @@ export default {
 			progress1: 0,
 			progress2: 0,
 			progress2text: '',
+			importErrors: 0,
+			importErrorMsg: '',
 			memory: 0,
 			storage: {quota: Infinity, usage: 0, percent:0},
 			storageQuotaSupported: navigator.storage && navigator.storage.estimate,
@@ -135,7 +141,6 @@ export default {
 			}
 		},
 		useRAMDB() {
-			console.log(this.$root)
 			this.$root.db = this.dbProvider
 			this.$parent.selectView(2)
 		},
@@ -148,7 +153,6 @@ export default {
 				})
 			}
 			this.getStorageData()
-			console.log(this)
 			this.activePanel = 'importSourceSelector'
 		},
 		metaLoadingSuccess(data) {
@@ -203,22 +207,28 @@ export default {
 							? ~~((window.performance.memory.usedJSHeapSize / window.performance.memory.jsHeapSizeLimit) * 100)
 							: 0
 					}
-					let mpd = mpp.parse(
-						await data.contentAdapterInstance.getFileContent(
-							data.indexDir + id + '/messages' + data.chatFiles[id][i] + '.html'
-						),
-						id
-					)
+					try {
+						let mpd = mpp.parse(
+							await data.contentAdapterInstance.getFileContent(
+								data.indexDir + id + '/messages' + data.chatFiles[id][i] + '.html'
+							),
+							id
+						)
 
-					for (let msg of mpd.messages) {
-						await this.dbProvider.addMessage(msg)
-						msg = undefined
+						for (let msg of mpd.messages) {
+							await this.dbProvider.addMessage(msg)
+							msg = undefined
+						}
+
+						userDBMap = new Map([...userDBMap, ...(mpd.fromDB)])
+
+						this.progress1 = ~~((fc / fileCount) * 100)
+						this.progress2 = ~~((i / l) * 100)
+					} catch(e) {
+						this.importErrors++
+						this.importErrorMsg = e
+						console.error(e)
 					}
-
-					userDBMap = new Map([...userDBMap, ...(mpd.fromDB)])
-
-					this.progress1 = ~~((fc / fileCount) * 100)
-					this.progress2 = ~~((i / l) * 100)
 				}
 				this.dbProvider.addChat(parseInt(id), data.chats[id])
 			}

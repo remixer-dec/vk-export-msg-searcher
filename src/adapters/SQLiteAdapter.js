@@ -6,7 +6,7 @@ export default class SQLiteAdapter {
         this.dbReady = new Promise((resolve, reject) => {
             initSqlJs({locateFile: (f) => './' + f}).then((SQL) => {
                 if (create) {
-                    const db = new SQL.Database();
+                    const db = new SQL.Database()
                     this.db = db
                     db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
                     db.run("CREATE TABLE chats (id INTEGER PRIMARY KEY, name TEXT)")

@@ -7,7 +7,7 @@ export default class ZipContentAdapter {
         return this.filenames
     }
     async getFileContent(filename) {
-        let decoder = new TextDecoder("windows-1251");
+        let decoder = new TextDecoder("windows-1251")
         return decoder.decode(await this.src.file(filename).async('uint8array'))
     }
 }

@@ -12,7 +12,7 @@ export default class FolderContentAdapter {
             let file = Array.from(this.src.files).find(x => x.webkitRelativePath == filepath)
             reader.onload = function() {
                 let arrayBuffer = new Uint8Array(reader.result)
-                let decoder = new TextDecoder("windows-1251");
+                let decoder = new TextDecoder("windows-1251")
                 resolve(decoder.decode(arrayBuffer))
             }
             reader.readAsArrayBuffer(file)

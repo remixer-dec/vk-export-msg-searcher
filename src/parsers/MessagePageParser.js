@@ -1,8 +1,9 @@
 const months = "янв|фев|мар|апр|мая|июн|июл|авг|сен|окт|ноя|дек".split("|")
 export default class MessagePageParser {
+    fallbackMsgID = 1000000000
     parse(src, chatID) {
-        let parser = new DOMParser();
-        let htmlDoc = parser.parseFromString(src.replace(/<br>/g,'\n'), 'text/html');
+        let parser = new DOMParser()
+        let htmlDoc = parser.parseFromString(src.replace(/<br>/g,'\n'), 'text/html')
         let items = htmlDoc.getElementsByClassName('message')
         let messages = []
         let fromDB = new Map()
@@ -17,11 +18,11 @@ export default class MessagePageParser {
             }
             fromDB.set(from, fromWho)
             let parsedMSG = {
-                id: parseInt(msg.getAttribute('data-id')),
+                id: parseInt(msg.getAttribute('data-id')) || this.fallbackMsgID--,
                 cid: parseInt(chatID),
                 from,
                 date: this.parseDate(msg.firstElementChild.textContent),
-                txt: msg.children[1].firstChild.innerText ? '' : 1,
+                txt: msg.children[1].firstChild?.innerText ? '' : 1,
                 att: []
             }
             let attachments = msg.getElementsByClassName('attachment')
@@ -56,7 +57,9 @@ export default class MessagePageParser {
     }
     parseAttachment(attElement) {
         let link = attElement.getElementsByClassName('attachment__link')
-        return {desc: attElement.getElementsByClassName('attachment__description')[0].innerText,
-         link: (link.length > 0) ? link[0].getAttribute('href') : undefined}
+        return {
+            desc: attElement.getElementsByClassName('attachment__description')[0].innerText,
+            link: (link.length > 0) ? link[0].getAttribute('href') : undefined
+        }
     }
 }

@@ -1,6 +1,6 @@
 const DownloaderMixin = {
     downloadBlob: function(data, fileName, mimeType) {
-        let blob, url;
+        let blob, url
         blob = new Blob([data], {type: mimeType})
         url = window.URL.createObjectURL(blob)
         DownloaderMixin.downloadURL(url, fileName)

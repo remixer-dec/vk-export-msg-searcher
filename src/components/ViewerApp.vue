@@ -103,8 +103,8 @@ import FilterMixin from '../mixins/Filter'
 import BetterSearch from './BetterSearch'
 import MessageList from './MessageList'
 import SearchResults from './SearchResults'
-import DatePicker from 'vue2-datepicker';
-import 'vue2-datepicker/index.css';
+import DatePicker from 'vue2-datepicker'
+import 'vue2-datepicker/index.css'
 import VirtualList from 'vue-virtual-scroll-list'
 import DialogListItem from './DialogListItem'
 
@@ -398,5 +398,8 @@ input[type=file] {
 }
 .blurred {
     filter:blur(2px)
+}
+.Panel {
+    will-change: transform;
 }
 </style>

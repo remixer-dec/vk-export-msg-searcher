@@ -35,6 +35,7 @@ export default {
     },
     methods: {
         activateLinks(txt) {
+            txt = txt.replace(/</g,'&lt;').replace(/>/g,'&gt;')
             var urlreg = /((https?:\/\/|)[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/img
             txt = txt.replace(urlreg,`<a target="_blank" href="$1">$1</a>`)
             return txt
@@ -64,7 +65,7 @@ export default {
                                 str += `<div class="attach forwarded">${att.desc}</div>`
                             } else {
                                 if (att.link) {
-                                    str += `<div><a href="${att.link}" class="attach">${att.desc}</a></div>`
+                                    str += `<div><a href="${att.link}" target="_blank" class="attach">${att.desc}</a></div>`
                                 } else {
                                     str += `<div class="attach">${att.desc}</div>`
                                 }
@@ -78,6 +79,3 @@ export default {
     }
 }
 </script>
-
-<style lang="css" scoped>
-</style>

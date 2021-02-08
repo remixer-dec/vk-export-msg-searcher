@@ -1,4 +1,4 @@
-import Dexie from 'dexie';
+import Dexie from 'dexie'
 
 function getAllWords(text) {
     return Array.from(new Set(text.replace(/[,.!?:"'()\n\r]/g,'').toLowerCase().split(' ')))
@@ -85,8 +85,8 @@ export default class IDBAdapter {
             messages: 'id, uid, cid, txt, att, date, *words'
         })
         this.db.messages.hook("creating", function (primKey, obj) {
-            if (typeof obj.txt == 'string') obj.words = getAllWords(obj.txt);
-        });
+            if (typeof obj.txt == 'string') obj.words = getAllWords(obj.txt)
+        })
 
     }
     async check() {

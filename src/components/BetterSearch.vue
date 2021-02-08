@@ -6,7 +6,6 @@
 			<input v-bind="$attrs" :id="'search-'+searchId" ref="input" type="text" class="Search__input" v-model="textvalue" :autoComplete="autoComplete"
                 @focus="focusHandler" @blur="blurHandler" @keydown.enter="enterClicked" />
 			<div class="Search__after-width" v-if="!!$slots.after">
-				<!-- <slot name="after"></slot> -->
 			</div>
 			<label class="Search__placeholder" :for="'search-'+searchId">
           <div class="Search__placeholder-in">
